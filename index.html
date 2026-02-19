@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1A1816">
+  <title>8-Week Pull-Up Programme</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif; }
+    #root { min-height: 100vh; }
+  </style>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+const { useState, useEffect } = React;
+
+// Programme Data
+const PROGRAMME = {
+  weeks1to4: {
+    phase: 'DENSITY BLOCK',
+    phaseNote: 'Saturday endurance = short-rest density sets. Go to max sets of 5 reps at 45 sec rest. Stop when form breaks.',
+    gtgReps: 5,
+    weeks: [1, 2, 3, 4],
+  },
+  weeks5to8: {
+    phase: 'REST-PAUSE BLOCK',
+    phaseNote: 'Saturday endurance switches to rest-pause. Training peak output under severe fatigue for the 15+ rep range.',
+    gtgReps: 7,
+    weeks: [5, 6, 7, 8],
+  },
+};
+
+function getDayPlan(week, dayOfWeek) {
+  const isPhase1 = week <= 4;
+  const gtgReps = isPhase1 ? 5 : 7;
+  const isTestWeek = week === 4 || week === 8;
+
+  if (isTestWeek) {
+    switch (dayOfWeek) {
+      case 'Monday': return {
+        type: 'weighted', label: 'Heavy Weighted',
+        exercises: isPhase1 ? [
+          { name: 'Weighted pull-ups @ 12.5kg', prescription: '4 × 4', rest: '2.5 min', note: 'Normal tempo. Full dead hang start every rep.' },
+          { name: 'Weighted dead hangs @ 12.5kg', prescription: '3 × 30 sec', rest: '90 sec', note: 'Relaxed shoulders, full lat stretch.' },
+          { name: 'Hanging leg raises', prescription: '3 × 8', rest: '60 sec', note: 'Controlled, no swinging.' },
+        ] : [
+          { name: 'Weighted pull-ups @ 15kg', prescription: '5 × 4', rest: '2.5 min', note: 'Added a set and load from weeks 1-4.' },
+          { name: 'Weighted dead hangs @ 15kg', prescription: '3 × 35 sec', rest: '90 sec', note: 'Full lat stretch.' },
+          { name: 'Hanging leg raises', prescription: '3 × 10', rest: '60 sec', note: 'Increased from 8 reps.' },
+        ]
+      };
+      case 'Tuesday': return { type: 'gtg', label: 'GTG', gtgReps };
+      case 'Wednesday': return { type: 'gtg', label: 'GTG', gtgReps };
+      case 'Thursday': return { type: 'rest', label: 'REST', note: 'Rest before max test.' };
+      case 'Friday': return { type: 'rest', label: 'REST', note: 'Rest before max test.' };
+      case 'Saturday': return {
+        type: 'test', label: 'MAX TEST',
+        exercises: [
+          { name: 'Max rep pull-up test', prescription: '1 set, all out', rest: '—', note: 'Full dead hang every rep. Chin over bar.' },
+        ]
+      };
+      case 'Sunday': return { type: 'rest', label: 'REST', note: 'Recovery after test.' };
+    }
+  }
+
+  switch (dayOfWeek) {
+    case 'Monday': return {
+      type: 'weighted', label: 'Heavy Weighted',
+      exercises: isPhase1 ? [
+        { name: 'Weighted pull-ups @ 12.5kg', prescription: '4 × 4', rest: '2.5 min', note: 'Normal tempo. Full dead hang start every rep.' },
+        { name: 'Weighted dead hangs @ 12.5kg', prescription: '3 × 30 sec', rest: '90 sec', note: 'Relaxed shoulders, full lat stretch.' },
+        { name: 'Hanging leg raises', prescription: '3 × 8', rest: '60 sec', note: 'Controlled, no swinging.' },
+      ] : [
+        { name: 'Weighted pull-ups @ 15kg', prescription: '5 × 4', rest: '2.5 min', note: 'Added a set and load from weeks 1-4.' },
+        { name: 'Weighted dead hangs @ 15kg', prescription: '3 × 35 sec', rest: '90 sec', note: 'Full lat stretch.' },
+        { name: 'Hanging leg raises', prescription: '3 × 10', rest: '60 sec', note: 'Increased from 8 reps.' },
+      ]
+    };
+    case 'Tuesday': return { type: 'gtg', label: 'GTG', gtgReps };
+    case 'Wednesday': return { type: 'gtg', label: 'GTG', gtgReps };
+    case 'Thursday': return {
+      type: 'weighted', label: 'Moderate Weighted',
+      exercises: isPhase1 ? [
+        { name: 'Weighted pull-ups @ 10kg', prescription: '4 × 4', rest: '2 min', note: 'Lighter than Monday. Perfect reps.' },
+        { name: 'Dead hangs (bodyweight)', prescription: '3 × 45 sec', rest: '60 sec', note: 'Building toward 60+ sec holds.' },
+        { name: 'Hanging leg raises', prescription: '3 × 8', rest: '60 sec', note: 'Controlled, no swinging.' },
+      ] : [
+        { name: 'Weighted pull-ups @ 12.5kg', prescription: '4 × 5', rest: '2 min', note: 'More reps at the original load.' },
+        { name: 'Dead hangs (bodyweight)', prescription: '3 × 60 sec', rest: '60 sec', note: 'Target unbroken 60 seconds.' },
+        { name: 'Hanging leg raises', prescription: '3 × 10', rest: '60 sec', note: 'Controlled.' },
+      ]
+    };
+    case 'Friday': return { type: 'gtg', label: 'GTG', gtgReps };
+    case 'Saturday': {
+      if (isPhase1) {
+        return {
+          type: 'endurance', label: 'Endurance (Density)',
+          exercises: [
+            { name: 'Short-rest density pull-ups', prescription: 'Max sets × 5 reps', rest: '45 sec', note: 'Go until form breaks. That set does not count.' },
+            { name: "Farmer's carry (heavy DBs/bags)", prescription: '3 × 40 metres', rest: '60 sec', note: 'Grip endurance. Squeeze hard.' },
+          ]
+        };
+      } else {
+        return {
+          type: 'endurance', label: 'Endurance (Rest-Pause)',
+          exercises: [
+            { name: 'Rest-pause: Round 1', prescription: 'Max → 20s → Max → 20s → Max', rest: '—', note: 'Record reps: ___ + ___ + ___' },
+            { name: 'Rest-pause: Round 2', prescription: 'Max → 20s → Max → 20s → Max', rest: '3 min', note: 'Record reps: ___ + ___ + ___' },
+            { name: "Farmer's carry (heavy DBs/bags)", prescription: '3 × 50 metres', rest: '60 sec', note: 'Heavier or further than weeks 1-4.' },
+          ]
+        };
+      }
+    }
+    case 'Sunday': return { type: 'gtg', label: 'GTG', gtgReps };
+  }
+}
+
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+const TYPE_COLORS = {
+  weighted: { bg: 'rgba(196, 167, 125, 0.15)', border: '#C4A77D', text: '#C4A77D', badge: '#C4A77D' },
+  gtg: { bg: 'rgba(139, 115, 85, 0.1)', border: '#8B7355', text: '#8B7355', badge: '#8B7355' },
+  endurance: { bg: 'rgba(196, 60, 45, 0.1)', border: '#C43C2D', text: '#C43C2D', badge: '#C43C2D' },
+  rest: { bg: 'rgba(74, 69, 64, 0.1)', border: '#4A4540', text: '#4A4540', badge: '#4A4540' },
+  test: { bg: 'rgba(13, 148, 136, 0.15)', border: '#0D9488', text: '#0D9488', badge: '#0D9488' },
+};
+
+function App() {
+  const [screen, setScreen] = useState('home');
+  const [selectedWeek, setSelectedWeek] = useState(null);
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [checks, setChecks] = useState({});
+  const [notes, setNotes] = useState({});
+  const [testResults, setTestResults] = useState({});
+  const [densityResults, setDensityResults] = useState({});
+  const [restPauseResults, setRestPauseResults] = useState({});
+
+  // Load from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('pullup-programme');
+      if (saved) {
+        const data = JSON.parse(saved);
+        setChecks(data.checks || {});
+        setNotes(data.notes || {});
+        setTestResults(data.testResults || {});
+        setDensityResults(data.densityResults || {});
+        setRestPauseResults(data.restPauseResults || {});
+      }
+    } catch (e) {}
+  }, []);
+
+  // Save to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('pullup-programme', JSON.stringify({ checks, notes, testResults, densityResults, restPauseResults }));
+    } catch (e) {}
+  }, [checks, notes, testResults, densityResults, restPauseResults]);
+
+  const toggleCheck = (key) => {
+    setChecks(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const getWeekProgress = (week) => {
+    let total = 0;
+    let done = 0;
+    DAYS.forEach(day => {
+      const plan = getDayPlan(week, day);
+      if (plan.exercises) {
+        plan.exercises.forEach((_, i) => {
+          total++;
+          if (checks[`w${week}-${day}-${i}`]) done++;
+        });
+      } else if (plan.type === 'gtg') {
+        total++;
+        if (checks[`w${week}-${day}-gtg`]) done++;
+      } else if (plan.type === 'rest') {
+        total++;
+        if (checks[`w${week}-${day}-rest`]) done++;
+      }
+    });
+    return { total, done, pct: total > 0 ? Math.round((done / total) * 100) : 0 };
+  };
+
+  const getDayProgress = (week, day) => {
+    const plan = getDayPlan(week, day);
+    let total = 0;
+    let done = 0;
+    if (plan.exercises) {
+      plan.exercises.forEach((_, i) => {
+        total++;
+        if (checks[`w${week}-${day}-${i}`]) done++;
+      });
+    } else if (plan.type === 'gtg') {
+      total = 1;
+      done = checks[`w${week}-${day}-gtg`] ? 1 : 0;
+    } else if (plan.type === 'rest') {
+      total = 1;
+      done = checks[`w${week}-${day}-rest`] ? 1 : 0;
+    }
+    return { total, done, complete: done === total && total > 0 };
+  };
+
+  // HOME SCREEN
+  if (screen === 'home') {
+    return (
+      <div style={s.container}>
+        <div style={s.abstractBg}>
+          <div style={s.abstractLine1} />
+          <div style={s.abstractLine2} />
+          <div style={s.abstractDiamond} />
+          <div style={s.abstractOrb} />
+          <div style={s.abstractOrb2} />
+        </div>
+        <div style={s.content}>
+          <header style={s.hero}>
+            <div style={s.heroAbstract} />
+            <div style={s.heroContent}>
+              <span style={s.heroLabel}>8-WEEK PROGRAMME</span>
+              <h1 style={s.heroTitle}>Pull-Up <span style={s.accent}>Progression</span></h1>
+              <p style={s.heroSub}>10 → 20 reps • GTG + Weighted + Endurance</p>
+            </div>
+          </header>
+
+          <div style={s.phaseSection}>
+            <div style={s.phaseCard}>
+              <div style={s.phaseCardAccent} />
+              <span style={s.phaseTag}>WEEKS 1-4</span>
+              <span style={s.phaseName}>Density Block</span>
+              <span style={s.phaseDesc}>Build metabolic base with short-rest density sets</span>
+            </div>
+            <div style={{ ...s.phaseCard, ...s.phaseCard2 }}>
+              <div style={{ ...s.phaseCardAccent, ...s.phaseCardAccent2 }} />
+              <span style={{ ...s.phaseTag, ...s.phaseTag2 }}>WEEKS 5-8</span>
+              <span style={s.phaseName}>Rest-Pause Block</span>
+              <span style={s.phaseDesc}>Peak output under fatigue for 15+ reps</span>
+            </div>
+          </div>
+
+          <div style={s.sectionHeader}>
+            <span style={s.sectionTitle}>WEEKS</span>
+          </div>
+
+          <div style={s.weekGrid}>
+            {[1,2,3,4,5,6,7,8].map((week, idx) => {
+              const prog = getWeekProgress(week);
+              const isPhase2 = week > 4;
+              const isTest = week === 4 || week === 8;
+              return (
+                <button key={week} style={{ ...s.weekCard, animationDelay: `${idx * 0.06}s` }} onClick={() => { setSelectedWeek(week); setScreen('week'); }}>
+                  <div style={s.weekCardAbstract} />
+                  <div style={s.weekCardTop}>
+                    <span style={{ ...s.weekNum, ...(isPhase2 ? s.weekNumPhase2 : {}) }}>W{week}</span>
+                    {isTest && <span style={s.testBadge}>TEST</span>}
+                  </div>
+                  <div style={s.weekProgressBar}>
+                    <div style={{ ...s.weekProgressFill, width: `${prog.pct}%`, ...(prog.pct === 100 ? s.weekProgressComplete : {}) }} />
+                  </div>
+                  <span style={s.weekPct}>{prog.pct}%</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={s.rulesSection}>
+            <span style={s.sectionTitle}>PROGRAMME RULES</span>
+            <div style={s.rulesCard}>
+              {[
+                'GTG sets must feel effortless. Drop reps by 1 if any set feels like work.',
+                'Never skip weighted days. They build the strength reserve.',
+                'Dead hang every rep. No bouncing, no half reps.',
+                'Density day: stop when form breaks. Track clean sets only.',
+                'Rest-pause: record every number. Round 1 first-set is your progress marker.',
+                'Max test: full dead hang, chin over bar, clean reps only.',
+              ].map((rule, i) => (
+                <div key={i} style={s.ruleItem}>
+                  <span style={s.ruleDot}>●</span>
+                  <span style={s.ruleText}>{rule}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button style={s.resetBtn} onClick={() => {
+            if (confirm('Reset all progress? This cannot be undone.')) {
+              setChecks({});
+              setNotes({});
+              setTestResults({});
+              setDensityResults({});
+              setRestPauseResults({});
+            }
+          }}>
+            Reset All Progress
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // WEEK SCREEN
+  if (screen === 'week') {
+    const week = selectedWeek;
+    const isPhase1 = week <= 4;
+    const prog = getWeekProgress(week);
+
+    return (
+      <div style={s.container}>
+        <div style={s.abstractBg}>
+          <div style={s.abstractLine1} />
+          <div style={s.abstractLine3} />
+          <div style={s.abstractOrb} />
+        </div>
+        <div style={s.content}>
+          <button style={s.backBtn} onClick={() => setScreen('home')}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
+
+          <div style={s.weekHeader}>
+            <span style={s.weekHeaderPhase}>{isPhase1 ? 'DENSITY BLOCK' : 'REST-PAUSE BLOCK'}</span>
+            <h1 style={s.weekHeaderTitle}>Week <span style={s.accent}>{week}</span></h1>
+            <div style={s.weekHeaderProgress}>
+              <div style={s.weekHeaderBar}>
+                <div style={{ ...s.weekHeaderBarFill, width: `${prog.pct}%` }} />
+              </div>
+              <span style={s.weekHeaderPct}>{prog.done}/{prog.total} complete</span>
+            </div>
+          </div>
+
+          <div style={s.dayList}>
+            {DAYS.map((day, idx) => {
+              const plan = getDayPlan(week, day);
+              const dayProg = getDayProgress(week, day);
+              const colors = TYPE_COLORS[plan.type];
+              return (
+                <button key={day} style={{ ...s.dayCard, borderLeftColor: colors.border, animationDelay: `${idx * 0.05}s` }} onClick={() => { setSelectedDay(day); setScreen('day'); }}>
+                  <div style={s.dayCardLeft}>
+                    <span style={s.dayName}>{day}</span>
+                    <span style={{ ...s.dayType, color: colors.text }}>{plan.label}</span>
+                  </div>
+                  <div style={s.dayCardRight}>
+                    {dayProg.complete ? (
+                      <span style={s.dayCheck}>✓</span>
+                    ) : (
+                      <span style={s.dayArrow}>→</span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // DAY SCREEN
+  if (screen === 'day') {
+    const week = selectedWeek;
+    const day = selectedDay;
+    const plan = getDayPlan(week, day);
+    const colors = TYPE_COLORS[plan.type];
+    const isPhase1 = week <= 4;
+
+    return (
+      <div style={s.container}>
+        <div style={s.abstractBg}>
+          <div style={s.abstractLine2} />
+          <div style={s.abstractLine3} />
+          <div style={s.abstractOrb2} />
+        </div>
+        <div style={s.content}>
+          <button style={s.backBtn} onClick={() => setScreen('week')}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
+
+          <div style={s.dayHeader}>
+            <span style={s.dayHeaderWeek}>WEEK {week}</span>
+            <h1 style={s.dayHeaderTitle}>{day}</h1>
+            <span style={{ ...s.dayHeaderType, backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }}>{plan.label}</span>
+          </div>
+
+          {/* GTG Day */}
+          {plan.type === 'gtg' && (
+            <div style={s.exerciseCard}>
+              <div style={s.exerciseCardHeader}>
+                <button style={{ ...s.checkBtn, ...(checks[`w${week}-${day}-gtg`] ? s.checkBtnDone : {}) }} onClick={() => toggleCheck(`w${week}-${day}-gtg`)}>
+                  {checks[`w${week}-${day}-gtg`] ? '✓' : ''}
+                </button>
+                <div style={s.exerciseInfo}>
+                  <span style={s.exerciseName}>Pull-ups spread throughout day</span>
+                  <span style={s.exercisePrescription}>8+ sets of {plan.gtgReps}</span>
+                </div>
+              </div>
+              <div style={s.exerciseDetails}>
+                <div style={s.detailRow}><span style={s.detailLabel}>Rest</span><span style={s.detailValue}>60-90 min between sets</span></div>
+                <div style={s.detailRow}><span style={s.detailLabel}>Note</span><span style={s.detailValue}>Every set effortless. If any set feels like work, drop reps by 1.</span></div>
+              </div>
+              <input
+                style={s.noteInput}
+                placeholder="Add notes for today..."
+                value={notes[`w${week}-${day}`] || ''}
+                onChange={(e) => setNotes(prev => ({ ...prev, [`w${week}-${day}`]: e.target.value }))}
+              />
+            </div>
+          )}
+
+          {/* Rest Day */}
+          {plan.type === 'rest' && (
+            <div style={s.exerciseCard}>
+              <div style={s.exerciseCardHeader}>
+                <button style={{ ...s.checkBtn, ...(checks[`w${week}-${day}-rest`] ? s.checkBtnDone : {}) }} onClick={() => toggleCheck(`w${week}-${day}-rest`)}>
+                  {checks[`w${week}-${day}-rest`] ? '✓' : ''}
+                </button>
+                <div style={s.exerciseInfo}>
+                  <span style={s.exerciseName}>Full Rest Day</span>
+                  <span style={s.exercisePrescription}>{plan.note}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Exercise Days */}
+          {plan.exercises && plan.exercises.map((exercise, i) => {
+            const key = `w${week}-${day}-${i}`;
+            const isDone = checks[key];
+            return (
+              <div key={i} style={{ ...s.exerciseCard, ...(isDone ? s.exerciseCardDone : {}), animationDelay: `${i * 0.08}s` }}>
+                <div style={s.exerciseCardHeader}>
+                  <button style={{ ...s.checkBtn, ...(isDone ? s.checkBtnDone : {}) }} onClick={() => toggleCheck(key)}>
+                    {isDone ? '✓' : ''}
+                  </button>
+                  <div style={s.exerciseInfo}>
+                    <span style={{ ...s.exerciseName, ...(isDone ? s.exerciseNameDone : {}) }}>{exercise.name}</span>
+                    <span style={s.exercisePrescription}>{exercise.prescription}</span>
+                  </div>
+                </div>
+                <div style={s.exerciseDetails}>
+                  <div style={s.detailRow}><span style={s.detailLabel}>Rest</span><span style={s.detailValue}>{exercise.rest}</span></div>
+                  <div style={s.detailRow}><span style={s.detailLabel}>Note</span><span style={s.detailValue}>{exercise.note}</span></div>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Test result input */}
+          {plan.type === 'test' && (
+            <div style={s.resultCard}>
+              <span style={s.resultLabel}>MAX TEST RESULT</span>
+              <div style={s.resultInputRow}>
+                <input
+                  type="number"
+                  style={s.resultInput}
+                  placeholder="0"
+                  value={testResults[`w${week}`] || ''}
+                  onChange={(e) => setTestResults(prev => ({ ...prev, [`w${week}`]: e.target.value }))}
+                />
+                <span style={s.resultSuffix}>reps</span>
+              </div>
+            </div>
+          )}
+
+          {/* Density result input */}
+          {plan.type === 'endurance' && isPhase1 && (
+            <div style={s.resultCard}>
+              <span style={s.resultLabel}>DENSITY SETS COMPLETED</span>
+              <div style={s.resultInputRow}>
+                <input
+                  type="number"
+                  style={s.resultInput}
+                  placeholder="0"
+                  value={densityResults[`w${week}`] || ''}
+                  onChange={(e) => setDensityResults(prev => ({ ...prev, [`w${week}`]: e.target.value }))}
+                />
+                <span style={s.resultSuffix}>clean sets</span>
+              </div>
+            </div>
+          )}
+
+          {/* Rest-pause result input */}
+          {plan.type === 'endurance' && !isPhase1 && (
+            <div style={s.resultCard}>
+              <span style={s.resultLabel}>REST-PAUSE RESULTS</span>
+              {[1, 2].map(round => (
+                <div key={round} style={s.rpRound}>
+                  <span style={s.rpRoundLabel}>Round {round}</span>
+                  <div style={s.rpInputRow}>
+                    {[1, 2, 3].map(set => (
+                      <React.Fragment key={set}>
+                        <input
+                          type="number"
+                          style={s.rpInput}
+                          placeholder="0"
+                          value={restPauseResults[`w${week}-r${round}-s${set}`] || ''}
+                          onChange={(e) => setRestPauseResults(prev => ({ ...prev, [`w${week}-r${round}-s${set}`]: e.target.value }))}
+                        />
+                        {set < 3 && <span style={s.rpPlus}>+</span>}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Notes */}
+          <div style={s.notesSection}>
+            <input
+              style={s.noteInput}
+              placeholder="Add notes for today..."
+              value={notes[`w${week}-${day}`] || ''}
+              onChange={(e) => setNotes(prev => ({ ...prev, [`w${week}-${day}`]: e.target.value }))}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+const s = {
+  container: { minHeight: '100vh', backgroundColor: '#F4F6F8', padding: '20px', fontFamily: "'DM Sans', sans-serif", position: 'relative', overflow: 'hidden' },
+  abstractBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' },
+  abstractLine1: { position: 'absolute', top: '-20%', left: '-10%', width: '60%', height: '200%', background: 'linear-gradient(135deg, transparent 48%, rgba(196,167,125,0.06) 49%, rgba(196,167,125,0.06) 51%, transparent 52%)', transform: 'rotate(-15deg)' },
+  abstractLine2: { position: 'absolute', top: '-30%', right: '-5%', width: '50%', height: '200%', background: 'linear-gradient(135deg, transparent 48%, rgba(139,115,85,0.04) 49%, rgba(139,115,85,0.04) 51%, transparent 52%)', transform: 'rotate(25deg)' },
+  abstractLine3: { position: 'absolute', bottom: '-10%', left: '20%', width: '80%', height: '150%', background: 'linear-gradient(-45deg, transparent 48%, rgba(13,148,136,0.03) 49%, rgba(13,148,136,0.03) 51%, transparent 52%)', transform: 'rotate(-30deg)' },
+  abstractDiamond: { position: 'absolute', top: '15%', right: '5%', width: '100px', height: '100px', border: '1px solid rgba(196,167,125,0.1)', transform: 'rotate(45deg)' },
+  abstractOrb: { position: 'absolute', top: '30%', left: '-15%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(196,167,125,0.08) 0%, transparent 70%)' },
+  abstractOrb2: { position: 'absolute', bottom: '10%', right: '-10%', width: '250px', height: '250px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(13,148,136,0.05) 0%, transparent 70%)' },
+  content: { position: 'relative', zIndex: 1 },
+
+  // Hero
+  hero: { background: 'linear-gradient(135deg, #1A1816 0%, #2D2926 100%)', borderRadius: '24px', padding: '24px', marginBottom: '20px', boxShadow: '0 8px 32px rgba(26,24,22,0.2)', position: 'relative', overflow: 'hidden' },
+  heroAbstract: { position: 'absolute', top: 0, right: 0, width: '150px', height: '100%', background: 'linear-gradient(135deg, transparent 40%, rgba(196,167,125,0.1) 100%)', pointerEvents: 'none' },
+  heroContent: { position: 'relative', zIndex: 1 },
+  heroLabel: { fontSize: '11px', fontWeight: '700', color: '#C4A77D', letterSpacing: '2px', display: 'block', marginBottom: '8px' },
+  heroTitle: { fontSize: '28px', fontWeight: '800', color: '#FFFFFF', margin: '0 0 8px 0', lineHeight: 1.2 },
+  accent: { color: '#C4A77D' },
+  heroSub: { fontSize: '14px', fontWeight: '500', color: 'rgba(255,255,255,0.5)', margin: 0 },
+
+  // Phase cards
+  phaseSection: { display: 'flex', gap: '12px', marginBottom: '24px' },
+  phaseCard: { flex: 1, background: 'linear-gradient(145deg, #2D2926, #1A1816)', borderRadius: '16px', padding: '16px', position: 'relative', overflow: 'hidden' },
+  phaseCard2: {},
+  phaseCardAccent: { position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#C4A77D' },
+  phaseCardAccent2: { backgroundColor: '#C43C2D' },
+  phaseTag: { fontSize: '10px', fontWeight: '700', color: '#C4A77D', letterSpacing: '1.5px', display: 'block', marginBottom: '6px' },
+  phaseTag2: { color: '#C43C2D' },
+  phaseName: { fontSize: '15px', fontWeight: '700', color: '#FFFFFF', display: 'block', marginBottom: '4px' },
+  phaseDesc: { fontSize: '12px', color: '#8B7355', lineHeight: 1.4 },
+
+  // Section
+  sectionHeader: { marginBottom: '12px', paddingLeft: '4px' },
+  sectionTitle: { fontSize: '12px', fontWeight: '700', color: '#8B7355', letterSpacing: '1.5px' },
+
+  // Week grid
+  weekGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '24px' },
+  weekCard: { background: 'linear-gradient(145deg, #2D2926, #1A1816)', borderRadius: '16px', padding: '14px 10px', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', boxShadow: '0 4px 16px rgba(26,24,22,0.25)', animation: 'fadeIn 0.4s ease forwards', opacity: 0, position: 'relative', overflow: 'hidden' },
+  weekCardAbstract: { position: 'absolute', top: 0, right: 0, width: '50%', height: '100%', background: 'linear-gradient(135deg, transparent 50%, rgba(196,167,125,0.05) 100%)', pointerEvents: 'none' },
+  weekNum: { fontSize: '18px', fontWeight: '800', color: '#C4A77D' },
+  weekNumPhase2: { color: '#C43C2D' },
+  testBadge: { fontSize: '8px', fontWeight: '700', color: '#0D9488', backgroundColor: 'rgba(13,148,136,0.2)', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.5px' },
+  weekCardTop: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' },
+  weekProgressBar: { width: '100%', height: '4px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' },
+  weekProgressFill: { height: '100%', background: 'linear-gradient(90deg, #C4A77D, #A8895D)', borderRadius: '2px', transition: 'width 0.4s ease' },
+  weekProgressComplete: { background: 'linear-gradient(90deg, #0D9488, #0F766E)' },
+  weekPct: { fontSize: '12px', fontWeight: '700', color: 'rgba(255,255,255,0.5)' },
+
+  // Rules
+  rulesSection: { marginBottom: '24px' },
+  rulesCard: { background: 'linear-gradient(145deg, #2D2926, #1A1816)', borderRadius: '16px', padding: '16px', marginTop: '12px' },
+  ruleItem: { display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' },
+  ruleDot: { color: '#C4A77D', fontSize: '8px', marginTop: '5px', flexShrink: 0 },
+  ruleText: { fontSize: '13px', color: '#FFFFFF', lineHeight: 1.5 },
+
+  resetBtn: { width: '100%', padding: '14px', fontSize: '14px', fontWeight: '600', borderRadius: '12px', border: '2px solid rgba(196,60,45,0.3)', backgroundColor: 'transparent', color: '#C43C2D', cursor: 'pointer', marginBottom: '40px' },
+
+  // Back button
+  backBtn: { background: 'none', border: 'none', color: '#8B7355', cursor: 'pointer', padding: '8px', marginLeft: '-8px', marginBottom: '16px', borderRadius: '12px', alignSelf: 'flex-start' },
+
+  // Week screen
+  weekHeader: { marginBottom: '20px' },
+  weekHeaderPhase: { fontSize: '11px', fontWeight: '700', color: '#C4A77D', letterSpacing: '2px', display: 'block', marginBottom: '8px' },
+  weekHeaderTitle: { fontSize: '32px', fontWeight: '800', color: '#1A1816', margin: '0 0 12px 0' },
+  weekHeaderProgress: { display: 'flex', alignItems: 'center', gap: '12px' },
+  weekHeaderBar: { flex: 1, height: '6px', backgroundColor: 'rgba(26,24,22,0.1)', borderRadius: '3px', overflow: 'hidden' },
+  weekHeaderBarFill: { height: '100%', background: 'linear-gradient(90deg, #C4A77D, #A8895D)', borderRadius: '3px', transition: 'width 0.4s ease' },
+  weekHeaderPct: { fontSize: '13px', fontWeight: '600', color: '#8B7355' },
+
+  // Day list
+  dayList: { display: 'flex', flexDirection: 'column', gap: '8px' },
+  dayCard: { background: 'linear-gradient(145deg, #2D2926, #1A1816)', borderRadius: '12px', padding: '16px 18px', border: 'none', borderLeft: '4px solid', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', animation: 'fadeIn 0.4s ease forwards', opacity: 0, textAlign: 'left', width: '100%' },
+  dayCardLeft: { display: 'flex', flexDirection: 'column', gap: '2px' },
+  dayName: { fontSize: '16px', fontWeight: '700', color: '#FFFFFF' },
+  dayType: { fontSize: '13px', fontWeight: '600' },
+  dayCardRight: {},
+  dayCheck: { fontSize: '20px', fontWeight: '700', color: '#0D9488', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'rgba(13,148,136,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  dayArrow: { fontSize: '18px', color: '#8B7355' },
+
+  // Day screen
+  dayHeader: { marginBottom: '20px' },
+  dayHeaderWeek: { fontSize: '11px', fontWeight: '700', color: '#C4A77D', letterSpacing: '2px', display: 'block', marginBottom: '4px' },
+  dayHeaderTitle: { fontSize: '32px', fontWeight: '800', color: '#1A1816', margin: '0 0 10px 0' },
+  dayHeaderType: { fontSize: '12px', fontWeight: '700', letterSpacing: '1px', padding: '6px 14px', borderRadius: '8px', border: '1.5px solid', display: 'inline-block' },
+
+  // Exercise cards
+  exerciseCard: { background: 'linear-gradient(145deg, #2D2926, #1A1816)', borderRadius: '16px', padding: '16px', marginBottom: '12px', border: '2px solid transparent', animation: 'fadeIn 0.4s ease forwards', opacity: 0 },
+  exerciseCardDone: { borderColor: '#0D9488', boxShadow: '0 0 20px rgba(13,148,136,0.15)' },
+  exerciseCardHeader: { display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '12px' },
+  checkBtn: { width: '36px', height: '36px', borderRadius: '10px', border: '2.5px solid #4A4540', backgroundColor: 'transparent', color: 'transparent', fontSize: '18px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.25s ease' },
+  checkBtnDone: { backgroundColor: '#0D9488', borderColor: '#0D9488', color: '#FFFFFF' },
+  exerciseInfo: { display: 'flex', flexDirection: 'column', gap: '4px' },
+  exerciseName: { fontSize: '16px', fontWeight: '700', color: '#FFFFFF' },
+  exerciseNameDone: { color: '#0D9488' },
+  exercisePrescription: { fontSize: '14px', fontWeight: '600', color: '#C4A77D' },
+  exerciseDetails: { paddingLeft: '50px' },
+  detailRow: { display: 'flex', gap: '8px', padding: '4px 0' },
+  detailLabel: { fontSize: '12px', fontWeight: '700', color: '#8B7355', minWidth: '36px' },
+  detailValue: { fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.4 },
+
+  // Result cards
+  resultCard: { background: 'linear-gradient(145deg, #0D9488, #0F766E)', borderRadius: '16px', padding: '20px', marginBottom: '12px' },
+  resultLabel: { fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.7)', letterSpacing: '1.5px', display: 'block', marginBottom: '12px' },
+  resultInputRow: { display: 'flex', alignItems: 'center', gap: '10px' },
+  resultInput: { width: '80px', padding: '12px', fontSize: '24px', fontWeight: '800', borderRadius: '12px', border: '2px solid rgba(255,255,255,0.3)', backgroundColor: 'rgba(0,0,0,0.2)', color: '#FFFFFF', textAlign: 'center', outline: 'none' },
+  resultSuffix: { fontSize: '16px', fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
+
+  // Rest-pause inputs
+  rpRound: { marginBottom: '14px' },
+  rpRoundLabel: { fontSize: '13px', fontWeight: '700', color: '#FFFFFF', display: 'block', marginBottom: '8px' },
+  rpInputRow: { display: 'flex', alignItems: 'center', gap: '6px' },
+  rpInput: { width: '56px', padding: '10px', fontSize: '18px', fontWeight: '700', borderRadius: '10px', border: '2px solid rgba(255,255,255,0.3)', backgroundColor: 'rgba(0,0,0,0.2)', color: '#FFFFFF', textAlign: 'center', outline: 'none' },
+  rpPlus: { fontSize: '18px', fontWeight: '700', color: 'rgba(255,255,255,0.5)' },
+
+  // Notes
+  notesSection: { marginTop: '8px', marginBottom: '40px' },
+  noteInput: { width: '100%', padding: '14px 16px', fontSize: '14px', fontWeight: '500', borderRadius: '12px', border: '2px solid rgba(26,24,22,0.1)', backgroundColor: 'rgba(255,255,255,0.8)', color: '#1A1816', outline: 'none', boxSizing: 'border-box' },
+};
+
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  input:focus { border-color: #C4A77D !important; }
+  input::placeholder { color: #8B7355; }
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input[type=number] { -moz-appearance: textfield; }
+`;
+document.head.appendChild(styleSheet);
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
